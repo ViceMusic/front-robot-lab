@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robot Lab · 用双手理解 FK / IK</title>
+  <link rel="stylesheet" href="lab3d.css">
+  <script defer src="vendor/three.min.js"></script>
+  <script defer src="math.js"></script><script defer src="lab3d.js"></script>
+</head>
+<body>
+<header><div class="brand">⌁ ROBOT <b>LAB</b><span>一个目标，两种思路。</span></div><a href="index-2d.html">二维 PID 完整版 ↗</a></header>
+<main>
+  <section class="scene-card">
+    <div class="scene-title"><span>INTERACTIVE KINEMATICS / 02 DOF</span><div><button id="view">俯视 / 立体 <kbd>V</kbd></button><button id="reset">重置 <kbd>R</kbd></button></div></div>
+    <div id="stage" tabindex="0" role="application" aria-label="机械臂交互区域，Tab 切换模式；FK 使用 A D W S，IK 使用方向键。Escape 退出键盘操作。">
+      <div id="failure" hidden></div>
+      <div class="scene-help">拖动：旋转视角 · 滚轮：缩放 · IK 模式点击：设置目标</div>
+      <div class="badge">3D 展示 · 平面双关节运动</div>
+    </div>
+    <div class="measurements">
+      <div><small>关节 θ₁ / θ₂</small><strong id="angles"></strong></div>
+      <div><small>实际末端 x / y</small><strong id="position"></strong></div>
+      <div><small>目标 x / y</small><strong id="target"></strong></div>
+    </div>
+  </section>
+  <aside>
+    <div class="eyebrow">亲手试试 / HOLD TO MOVE</div><h1>你想控制什么？</h1>
+    <div class="modes"><button id="fk" aria-pressed="true" class="active">FK <span>控制关节</span></button><button id="ik" aria-pressed="false">IK <span>控制末端</span></button></div>
+    <p id="explanation"></p><div id="flow" class="flow"></div>
+    <div class="keyboard">
+      <div id="fk-keys">
+        <div class="key-row"><button data-key="KeyA">A</button><span>关节 1</span><button data-key="KeyD">D</button></div>
+        <div class="key-row"><button data-key="KeyS">S</button><span>关节 2</span><button data-key="KeyW">W</button></div>
+        <p>A / S 减小角度，D / W 增大角度。<br>同时按住 <b>D + W</b>，观察末端轨迹。</p>
+      </div>
+      <div id="ik-keys" hidden>
+        <div class="arrow-pad"><button data-key="ArrowUp">↑</button><div><button data-key="ArrowLeft">←</button><button data-key="ArrowDown">↓</button><button data-key="ArrowRight">→</button></div></div>
+        <p>方向键移动目标，关节自动协同。<br>一直按 <b>→</b>，观察末端沿直线运动。</p>
+      </div>
+    </div>
+    <p class="shortcuts"><kbd>Tab</kbd> 切模式　<kbd>Shift</kbd> 慢速　<kbd>C</kbd> 清轨迹<br>点击场景启用键盘；<kbd>Esc</kbd> 退出键盘控制。</p>
+    <button id="elbow" class="full">切换肘上 / 肘下 <kbd>E</kbd></button>
+    <div id="status" role="status"></div>
+    <div class="numbers"><span>L₁ = 1.25 m</span><span>L₂ = 1.00 m</span></div>
+    <details><summary>看一点公式</summary>
+      <p>FK：<br>x = L₁cosθ₁ + L₂cos(θ₁+θ₂)<br>y = L₁sinθ₁ + L₂sin(θ₁+θ₂)</p>
+      <p>IK：<br>c₂ = (x²+y²−L₁²−L₂²)/(2L₁L₂)<br>θ₂ = ±acos(c₂)<br>θ₁ = atan2(y,x) − atan2(L₂sinθ₂, L₁+L₂cosθ₂)</p>
+      <p id="verify"></p>
+      <p>θ₂ 相对于第一连杆；逆时针为正，内部用弧度。灰色内圈以内和外圈以外不可达。切换肘部解直接显示另一姿态，不模拟中间路径。</p>
+    </details>
+  </aside>
+</main>
+<footer><span>橙色：末端与轨迹　绿色：IK 目标　红色：不可达目标</span><span>只讲 FK / IK，不加 PID、重力或训练。</span></footer>
+</body></html>

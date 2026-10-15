@@ -1,0 +1,8 @@
+# Local-only notes and editor/system files
+notes/private/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+node_modules/

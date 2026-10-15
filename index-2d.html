@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Robot Lab · 二连杆运动实验室</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="math.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-icon">⌁</span><div>ROBOT <b>LAB</b><small>交互式机器人运动学实验室</small></div></div>
+    <div class="header-right"><span class="tag">2 DOF · PLANAR ARM</span><span class="live"><i id="live-dot"></i><span id="live-text">仿真运行中</span></span><button id="pause">暂停</button><button id="reset" class="quiet">重置实验</button></div>
+  </header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">LEARN BY MOVING</p><h1>从两个角度，到一个坐标。</h1><p>调整关节，点击目标，再观察控制器如何把机械臂送达。</p></div><div class="intro-note"><span>01 /</span> 运动学 → 控制 → 反馈</div></section>
+    <div class="workspace">
+      <aside class="controls">
+        <section class="panel">
+          <div class="section-head"><h2><span>01</span> 关节与几何</h2><span class="small-label">FK</span></div>
+          <div class="segmented" role="group" aria-label="控制模式"><button id="mode-pid" class="active" aria-pressed="true">PID 运动</button><button id="mode-direct" aria-pressed="false">直接 FK</button></div>
+          <p class="hint" id="mode-hint">滑块设置目标角，实体机械臂通过 PID 跟随。</p>
+          <div class="slider-heading"><label for="q1">基座关节 <b>θ₁*</b></label><output id="q1-value" for="q1"></output></div><input id="q1" type="range" min="-180" max="180" value="35" step="0.1">
+          <div class="slider-heading"><label for="q2">相对关节 <b>θ₂*</b></label><output id="q2-value" for="q2"></output></div><input id="q2" type="range" min="-180" max="180" value="65" step="0.1">
+          <div class="two-cols length-fields"><label>连杆 L₁ <span>m</span><input id="l1" type="number" min="0.2" max="2.5" step="0.05" value="1.25"></label><label>连杆 L₂ <span>m</span><input id="l2" type="number" min="0.2" max="2.5" step="0.05" value="1.00"></label></div>
+          <p class="hint">θ₂ 相对于第一根连杆；两角逆时针为正。</p>
+        </section>
+        <section class="panel">
+          <div class="section-head"><h2><span>02</span> 目标位置</h2><span class="small-label">IK</span></div>
+          <div class="two-cols"><label>目标 x <span>m</span><input id="target-x" type="number" value="1.4" step="any"></label><label>目标 y <span>m</span><input id="target-y" type="number" value="1.0" step="any"></label></div>
+          <div class="target-actions"><select id="branch" aria-label="逆运动学分支"><option value="up">肘上 · θ₂ ≤ 0</option><option value="down">肘下 · θ₂ ≥ 0</option></select><button id="solve" class="primary">求解 IK ↗</button></div>
+          <p class="hint">也可在画布点击或拖动目标。肘上/下相对于基座→目标方向定义。</p>
+          <div id="status" class="status" role="status" aria-live="polite"></div>
+        </section>
+        <section class="panel">
+          <div class="section-head"><h2><span>03</span> PID 控制器</h2><span class="small-label">JOINT SPACE</span></div>
+          <div class="presets"><button data-preset="smooth" class="chosen">平稳</button><button data-preset="overshoot">超调</button><button data-preset="integral">积分</button></div>
+          <div class="slider-heading"><label for="kp">Kp <span>追赶目标</span></label><output id="kp-value"></output></div><input id="kp" type="range" min="0" max="100" step="1" value="26">
+          <div class="slider-heading"><label for="ki">Ki <span>累积误差</span></label><output id="ki-value"></output></div><input id="ki" type="range" min="0" max="20" step="0.1" value="0">
+          <div class="slider-heading"><label for="kd">Kd <span>抑制速度</span></label><output id="kd-value"></output></div><input id="kd" type="range" min="0" max="20" step="0.1" value="8">
+          <button id="step-test" class="wide">↗ 阶跃实验：两个姿态间切换</button>
+          <div class="torque-line">τ₁ / τ₂ <strong id="torques">0.00 / 0.00 N·m</strong></div>
+          <p class="hint" id="pid-note">限幅 ±45 N·m · 带积分抗饱和</p>
+        </section>
+      </aside>
+      <div class="main-column">
+        <section class="panel stage-panel">
+          <div class="stage-head"><div><span class="eyebrow">LIVE WORKSPACE</span><h2>二维机械臂</h2></div><div class="legend"><span class="actual">实际姿态</span><span class="target">执行目标</span><label><input id="show-trail" type="checkbox" checked> 轨迹</label><button id="clear-trail" class="icon-button" title="清除轨迹和曲线">清除</button></div></div>
+          <div class="canvas-wrap"><canvas id="arm" tabindex="0" aria-label="机械臂工作空间；可点击设置目标，也可使用左侧坐标输入"></canvas><div class="stage-caption"><span id="reach-label"></span><span id="pointer-label">点击空白处设置目标 ↗</span></div></div>
+          <div class="readouts"><div><small>请求目标 / x, y</small><strong id="requested-value"></strong></div><div><small>实际末端 / x, y</small><strong id="actual-value"></strong></div><div><small>到执行目标的误差</small><strong id="error-value"></strong></div><div><small>实际关节 / θ₁, θ₂</small><strong id="actual-angles"></strong></div></div>
+        </section>
+        <section class="panel charts-panel"><div class="section-head"><h2>运动响应 <span class="chart-subtitle">最近 20 秒 · 仿真时间</span></h2><span class="chart-legend">实线：实际　虚线：目标</span></div><div class="charts"><div><h3><i class="dot coral"></i>关节 θ₁ <span>deg</span></h3><canvas id="chart-q1" aria-label="关节一实际角度与目标角度曲线"></canvas></div><div><h3><i class="dot blue"></i>关节 θ₂ <span>deg</span></h3><canvas id="chart-q2" aria-label="关节二实际角度与目标角度曲线"></canvas></div><div><h3><i class="dot teal"></i>末端位置误差 <span>m</span></h3><canvas id="chart-error" aria-label="到执行目标的末端距离误差曲线"></canvas></div></div></section>
+        <section class="panel learning-panel"><div class="section-head"><h2>把运动拆成数学</h2><span class="small-label">LIVE CALCULATIONS</span></div><div class="math-grid">
+          <article><span class="formula-index">A / 正向运动学 FK</span><p class="equation">x = L₁ cos θ₁ + L₂ cos(θ₁ + θ₂)<br>y = L₁ sin θ₁ + L₂ sin(θ₁ + θ₂)</p><p class="math-result" id="fk-result"></p><small>输入实际关节角 → 输出实际末端位置；三角函数使用弧度。</small></article>
+          <article><span class="formula-index">B / 解析逆运动学 IK</span><p class="equation">c₂ = (x² + y² − L₁² − L₂²) / (2L₁L₂)<br>θ₂ = ±acos(c₂)<br>θ₁ = atan2(y,x) − atan2(L₂ sin θ₂, L₁+L₂ cos θ₂)</p><p class="math-result" id="ik-result"></p><small id="ik-verification"></small></article>
+          <article><span class="formula-index">C / 关节动力学 + PID</span><p class="equation">e = θ* − θ　　τ = Kp·e + Ki·∫e dt − Kd·θ̇<br>J·θ̈ = τ − b·θ̇</p><p class="math-result" id="pid-result"></p><small>两关节独立；无重力、无连杆耦合。J = [1, 0.75]，b = [0.7, 0.55]。这是教学近似，不是完整机器人动力学。</small></article>
+        </div></section>
+      </div>
+    </div>
+    <footer><span>ROBOT LAB / 离线教学实验 · 原生 Canvas · 无后端与 GPU 计算</span><span>先理解位置，再观察运动。</span></footer>
+  </main>
+</body>
+</html>
